@@ -1,126 +1,77 @@
-import * as React from "react";
-import styles from "../Section/section.module.css";
-import "./material.css";
-import { useState } from "react";
+import React, { useState } from 'react'
+import { CircularProgress } from '@mui/material';
 import Card from "../Card/Card";
-import { Box, CircularProgress, Tabs, Tab } from "@mui/material";
-import Carousel from "../Carousel/Carousel";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
+import styles from "./Section.module.css"
+import Carousel from '../Carousel/Carousel';
 
-const Section = ({ title, data, type, genres }) => {
-  const theme = createTheme({
-    components: {
-      MuiTabs: {
-        styleOverrides: {
-          indicator: {
-            backgroundColor: "#34c94b",
-          },
-        },
-      },
-    },
-    palette: {
-      primary: {
-        main: "#ffffff",
-      },
-    },
-  });
+// eg of data recieved is:
+// type='album' title='Top Albums' data={topAlbumSongs}
+// here, topAlbumSongs is just an array of 16-17 albums with some info and an array of songs in that album
 
-  const [toggle, setToggle] = useState(false);
-  const [value, setValue] = useState("all");
+const Section=({type,title,data,toggle=true})=> {
 
-  const handleToggle = () => {
-    setToggle(!toggle);
-  };
+// if carouselToggle is true means render "collapsed" view (ie corousel of albums) and  on the button provide "show all" text
+// if carouselToggle is false means render "show all" view (ie All albums ) and  on the button provide "Collapse all" text
+    const[carouselToggle,setCarouselToggle]=useState(true);
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-  };
-
-  const filterSongs = () => {
-    if (type === "songs" && value !== "all") {
-      return data.filter((ele) => ele.genre.key === value);
+    const handleToggle=()=>{
+        setCarouselToggle(!carouselToggle);
     }
-    return data;
-  };
 
   return (
     <div>
-      <div className={styles.header}>
-        <p>{title}</p>
-        <p className={styles.showAll} onClick={handleToggle}>
-          {toggle ? "Collapse" : "Show All"}
-        </p>
-      </div>
-      {type === "songs" && (
-        <ThemeProvider theme={theme}>
-          <Box sx={{ width: "100%", padding: "10px 20px" }}>
-            <Tabs
-              value={value}
-              onChange={handleChange}
-              textColor="primary"
-              aria-label="Genre Filter Tabs"
-            >
-              <Tab
-                value="all"
-                label="All"
-                key="all"
-                className={styles.genreTab}
-              />
-              {genres.map((tab) => (
-                <Tab
-                  key={tab.key}
-                  value={tab.key}
-                  label={tab.label}
-                  className={styles.genreTab}
-                />
-              ))}
-            </Tabs>
-          </Box>
-        </ThemeProvider>
-      )}
-      {!data.length ? (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            margin: "10px",
-          }}
-        >
-          <CircularProgress color="success" />
-          <p style={{ marginLeft: "10px" }}>Loading...</p>
-        </Box>
-      ) : (
-        <>
-          <div className={styles.cardsWrapper}>
-            <div className={styles.wrapper}>
-              {toggle ? (
-                // Use the filtered data directly
-                type === "songs" ? (
-                  filterSongs().map((card) => (
-                    <Card key={card.id} data={card} type={type} />
-                  ))
-                ) : (
-                  data.map((card) => (
-                    <Card key={card.id} data={card} type={type} />
-                  ))
-                )
-              ) : (
-                // Pass filtered data to Carousel
-                <Carousel
-                  data={type === "songs" ? filterSongs() : data}
-                  component={(card) => (
-                    <Card key={card.id} data={card} type={type} />
-                  )}
-                />
-              )}
+     {/* small top div with Name of section and "show all/collepse all" button */}
+        <div className={styles.sectionTop}>
+            <h3>{title}</h3>
+            <h4 onClick={handleToggle} className={styles.toggleText}>
+
+            {/*  check if we want to show the show/collapse button or not */}
+            {toggle?(
+                 carouselToggle?"Show All":"Collapse All"
+            ):(
+                <></>
+            )}
+            </h4>
+        </div>
+        
+        {data.length?(
+            <div className={styles.sectionInnerWrapper}>
+             {/* here, if carouselToggle is false then show first condition here(means "show all albums"), else show second (means show "Collpased view with corousel")*/}
+            {!carouselToggle?(
+                <div className={styles.showAllWrapper}>
+                {data.map((album)=>(
+                    //show card here
+                    <Card data={album} type={type} key={album.id}/>
+                ))}
+                </div>
+            ):(
+              <div>
+              {/* show carousel here */}
+              <Carousel data={data} renderCardComponent={(data)=><Card data={data} type={type}/>}/>
+              </div>  
+            )}
             </div>
-          </div>
-          {toggle && title === "Top Albums" && <hr />}
-        </>
-      )}
+        ):(
+            <div className={styles.progressBar}>
+            {/* when no data recieved just show circular loading icon */}
+            <CircularProgress />
+            </div>
+        )}
+
     </div>
-  );
-};
+  )
+}
 
 export default Section;
+
+/**
+ Notes:
+A.)Why are we passing the function "renderCardComponent" as a prop to carousel, can'nt we use the card component directly in carousel component?
+    1. Separation of Loigc: By passing the rendering logic (renderCardComponent) from the carousel to the section, you separate concerns. 
+          The carousel component should primarily handle the presentation of the carousel itself, while the section component should handle how the data is rendered within the carousel.
+
+    2. Scalability: If you have multiple sections with different types of carousels or data structures, using a rendering function 
+        allows you to handle each case appropriately without cluttering the carousel component with conditional rendering logic
+
+    3. Reducing the import cost, by not importing the card component in the carousel.
+ */
