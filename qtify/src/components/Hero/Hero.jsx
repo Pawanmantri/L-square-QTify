@@ -1,6 +1,6 @@
 import React from 'react'
 import HeroImage from '../../assets/vibrating-headphone.png'
-import styles from './Hero.module.css'
+import styles from './hero.module.css'
 const Hero = () => {
   return (
     <>  
